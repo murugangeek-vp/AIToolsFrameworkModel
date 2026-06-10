@@ -15,9 +15,7 @@ export const DashboardPage: React.FC = () => {
   const { tools, loading, loadAll } = useToolStore();
   const { activeDashboard, setActiveDashboard } = useUIStore();
 
-  useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+  useEffect(() => { loadAll(); }, [loadAll]);
 
   const dashTabs = [
     { id: 'trends', label: 'AI Trends', component: TrendsDashboard },
@@ -35,21 +33,28 @@ export const DashboardPage: React.FC = () => {
     <div className="space-y-6">
       {/* Title */}
       <div>
-        <h2 className="text-2xl font-black text-white tracking-tight">Executive Dashboards</h2>
-        <p className="text-slate-400 text-sm mt-0.5">High-level analytics and benchmark aggregations across the stack.</p>
+        <h2 className="text-2xl font-black t-text tracking-tight">Executive Dashboards</h2>
+        <p className="t-text-secondary text-sm mt-0.5">High-level analytics and benchmark aggregations across the stack.</p>
       </div>
 
       {/* Dashboard Sub-nav tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-800/80 pb-3">
+      <div className="flex flex-wrap gap-2 pb-3" style={{ borderBottom: '1px solid var(--divider)' }}>
         {dashTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveDashboard(tab.id as any)}
-            className={`text-xs px-4 py-2.5 rounded-lg border transition-all cursor-pointer font-bold uppercase tracking-wider ${
-              activeDashboard === tab.id
-                ? 'bg-indigo-600 border-indigo-650 text-white shadow-glow'
-                : 'border-slate-850 bg-slate-900/40 text-slate-400 hover:border-slate-700 hover:text-white'
+            className={`text-xs px-4 py-2.5 rounded-lg transition-all cursor-pointer font-bold uppercase tracking-wider ${
+              activeDashboard === tab.id ? 'shadow-glow' : 't-unselected'
             }`}
+            style={
+              activeDashboard === tab.id
+                ? {
+                    background: 'var(--accent-indigo)',
+                    border: '1px solid var(--accent-indigo)',
+                    color: '#fff',
+                  }
+                : {}
+            }
           >
             {tab.label}
           </button>

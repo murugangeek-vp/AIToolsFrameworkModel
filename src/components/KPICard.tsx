@@ -27,11 +27,17 @@ export const KPICard: React.FC<KPICardProps> = ({
     >
       <div className="flex justify-between items-start">
         <div>
-          <p className="text-sm font-medium text-slate-400 tracking-wide uppercase">{title}</p>
-          <h3 className="text-3xl font-bold mt-2 tracking-tight text-white">{value}</h3>
+          <p className="text-sm font-medium uppercase tracking-wide t-text-muted">{title}</p>
+          <h3 className="text-3xl font-bold mt-2 tracking-tight t-text">{value}</h3>
         </div>
         {icon && (
-          <span className="text-2xl p-2.5 bg-slate-800/60 rounded-lg border border-slate-700/50">
+          <span
+            className="text-2xl p-2.5 rounded-lg"
+            style={{
+              background: 'var(--surface-hover)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
             {icon}
           </span>
         )}
@@ -39,11 +45,11 @@ export const KPICard: React.FC<KPICardProps> = ({
       {(change || description) && (
         <div className="mt-4 flex items-center gap-2 text-xs">
           {change && (
-            <span className={`font-semibold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+            <span className={`font-semibold ${isPositive ? 'score-excellent' : 'score-poor'}`}>
               {change}
             </span>
           )}
-          {description && <span className="text-slate-400">{description}</span>}
+          {description && <span className="t-text-muted">{description}</span>}
         </div>
       )}
     </motion.div>

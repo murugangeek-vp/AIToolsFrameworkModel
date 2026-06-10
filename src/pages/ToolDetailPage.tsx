@@ -9,18 +9,32 @@ interface ToolDetailPageProps {
 
 export const ToolDetailPage: React.FC<ToolDetailPageProps> = ({ tool, onClose }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-2xl h-full bg-[#0a0a0f] border-l border-slate-800 shadow-2xl flex flex-col justify-between animate-slide-in-right">
+    <div className="fixed inset-0 z-50 flex items-center justify-end t-modal-overlay backdrop-blur-sm">
+      <div
+        className="t-modal w-full max-w-2xl h-full shadow-2xl flex flex-col justify-between animate-slide-in-right"
+        style={{ animation: 'slide-in-right 0.3s ease forwards' }}
+      >
         {/* Header */}
-        <div className="p-6 border-b border-slate-800/80 flex justify-between items-center bg-slate-900/40">
+        <div className="p-6 t-modal-header flex justify-between items-center">
           <div>
-            <span className="text-xs text-indigo-400 font-bold uppercase tracking-wider">{tool.category}</span>
-            <h3 className="text-xl font-black text-white mt-1">{tool.name}</h3>
-            <p className="text-slate-400 text-xs mt-0.5">By {tool.vendor}</p>
+            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent-indigo)' }}>
+              {tool.category}
+            </span>
+            <h3 className="text-xl font-black t-text mt-1">{tool.name}</h3>
+            <p className="t-text-muted text-xs mt-0.5">By {tool.vendor}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white text-xl p-2 rounded-lg hover:bg-slate-800 cursor-pointer"
+            className="t-text-secondary hover:t-text text-xl p-2 rounded-lg cursor-pointer transition-all"
+            style={{ transition: 'all 0.15s' }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'var(--surface-hover)';
+              e.currentTarget.style.color = 'var(--text-color)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'var(--text-muted)';
+            }}
           >
             ✕
           </button>
@@ -28,17 +42,20 @@ export const ToolDetailPage: React.FC<ToolDetailPageProps> = ({ tool, onClose })
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Main Description */}
+          {/* Description */}
           <div>
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Description</h4>
-            <p className="text-sm text-slate-300 leading-relaxed bg-slate-900/30 rounded-lg p-3 border border-slate-850">
+            <h4 className="text-xs font-bold t-label uppercase tracking-widest mb-2">Description</h4>
+            <p
+              className="text-sm t-text-secondary leading-relaxed rounded-lg p-3"
+              style={{ background: 'var(--surface-bg)', border: '1px solid var(--border-subtle)' }}
+            >
               {tool.description}
             </p>
           </div>
 
-          {/* Core Metrics Grid */}
+          {/* Benchmark Scores */}
           <div>
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Benchmark Scores</h4>
+            <h4 className="text-xs font-bold t-label uppercase tracking-widest mb-3">Benchmark Scores</h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {[
                 { label: 'Overall Rating', val: tool.overall_rating },
@@ -48,18 +65,28 @@ export const ToolDetailPage: React.FC<ToolDetailPageProps> = ({ tool, onClose })
                 { label: 'Security', val: tool.security_score },
                 { label: 'Scalability', val: tool.scalability_score },
               ].map((m) => (
-                <div key={m.label} className="bg-slate-900/60 border border-slate-850 rounded-lg p-3 flex justify-between items-center">
-                  <span className="text-xs text-slate-400 font-medium">{m.label}</span>
+                <div
+                  key={m.label}
+                  className="rounded-lg p-3 flex justify-between items-center"
+                  style={{
+                    background: 'var(--surface-bg)',
+                    border: '1px solid var(--border-subtle)',
+                  }}
+                >
+                  <span className="text-xs font-medium t-text-muted">{m.label}</span>
                   <ScoreBadge score={m.val} size="sm" />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Details & Specs */}
+          {/* Specifications */}
           <div>
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Specifications</h4>
-            <div className="divide-y divide-slate-850 bg-slate-900/30 border border-slate-850 rounded-lg overflow-hidden text-sm">
+            <h4 className="text-xs font-bold t-label uppercase tracking-widest mb-3">Specifications</h4>
+            <div
+              className="rounded-lg overflow-hidden text-sm"
+              style={{ border: '1px solid var(--border-subtle)' }}
+            >
               {[
                 { label: 'Pricing Model', val: tool.pricing_model },
                 { label: 'License', val: tool.license || 'N/A' },
@@ -70,34 +97,47 @@ export const ToolDetailPage: React.FC<ToolDetailPageProps> = ({ tool, onClose })
                 { label: 'Compliance Standards', val: tool.compliance || 'Standard' },
                 { label: 'Release Year', val: tool.release_year },
                 { label: 'Latest Version', val: tool.latest_version },
-              ].map((item) => (
-                <div key={item.label} className="flex justify-between p-3.5">
-                  <span className="text-slate-400 font-medium">{item.label}</span>
-                  <span className="text-white font-semibold">{item.val}</span>
+              ].map((item, idx) => (
+                <div
+                  key={item.label}
+                  className="flex justify-between p-3.5"
+                  style={{
+                    borderBottom: idx < 8 ? '1px solid var(--border-subtle)' : 'none',
+                    background: idx % 2 === 0 ? 'var(--surface-bg)' : 'transparent',
+                  }}
+                >
+                  <span className="t-text-muted font-medium">{item.label}</span>
+                  <span className="t-text font-semibold">{item.val}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Pricing notes */}
+          {/* Pricing Notes */}
           {tool.pricing_notes && (
             <div>
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Pricing & Licensing Notes</h4>
-              <p className="text-xs text-slate-350 bg-indigo-950/10 border border-indigo-950/60 p-3 rounded-lg leading-relaxed">
+              <h4 className="text-xs font-bold t-label uppercase tracking-widest mb-2">Pricing & Licensing Notes</h4>
+              <p
+                className="text-xs t-text-secondary leading-relaxed p-3 rounded-lg"
+                style={{
+                  background: 'rgba(99,102,241,0.07)',
+                  border: '1px solid rgba(99,102,241,0.2)',
+                }}
+              >
                 {tool.pricing_notes}
               </p>
             </div>
           )}
         </div>
 
-        {/* Footer actions */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-900/40 flex justify-end gap-3">
+        {/* Footer */}
+        <div className="p-4 t-modal-footer flex justify-end gap-3">
           {tool.website && (
             <a
               href={tool.website}
               target="_blank"
               rel="noreferrer"
-              className="px-4 py-2 border border-slate-700 hover:border-slate-500 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+              className="t-btn-secondary px-4 py-2 rounded-lg text-xs font-semibold transition-all"
             >
               Official Website
             </a>
@@ -107,7 +147,8 @@ export const ToolDetailPage: React.FC<ToolDetailPageProps> = ({ tool, onClose })
               href={tool.documentation}
               target="_blank"
               rel="noreferrer"
-              className="px-4 py-2 bg-indigo-650 hover:bg-indigo-550 rounded-lg text-xs font-semibold text-white transition-colors"
+              className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-colors"
+              style={{ background: 'var(--accent-indigo)' }}
             >
               Documentation
             </a>

@@ -14,44 +14,82 @@ import { CATEGORY_REGISTRY } from '@types-app/index';
 export const ExplorerPage: React.FC = () => {
   const { tools, loading, loadAll, loadCategory, loadingCategory } = useToolStore();
   const { filters } = useFilterStore();
-  const { activeCategoryId, viewMode, setViewMode } = useUIStore();
+  const { activeCategoryId, viewMode, setViewMode, pinnedToolId, pinnedFromQuery, clearPinned } = useUIStore();
   const [selectedTool, setSelectedTool] = useState<AITool | null>(null);
 
-  // Initial Load
-  useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+  useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Load category specifically when active category changes
   useEffect(() => {
     if (activeCategoryId) {
       const cat = CATEGORY_REGISTRY.find((c) => c.id === activeCategoryId);
-      if (cat) {
-        loadCategory(activeCategoryId);
-      }
+      if (cat) loadCategory(activeCategoryId);
     }
   }, [activeCategoryId, loadCategory]);
 
-  const filteredTools = applyFilters(
-    tools.filter((t) => {
-      if (!activeCategoryId) return true;
-      const meta = CATEGORY_REGISTRY.find((c) => c.id === activeCategoryId);
-      return meta ? t.category === meta.label : true;
-    }),
-    filters
-  );
+  // Apply filters
+  let baseFilteredTools = tools.filter((t) => {
+    if (!activeCategoryId) return true;
+    const meta = CATEGORY_REGISTRY.find((c) => c.id === activeCategoryId);
+    return meta ? t.category === meta.label : true;
+  });
+
+  let filteredTools = applyFilters(baseFilteredTools, filters);
+
+  // If a tool is pinned, bubble it to the top of the filtered list
+  const pinnedTool = pinnedToolId ? tools.find((t) => t.id === pinnedToolId) : null;
+  if (pinnedTool) {
+    const withoutPinned = filteredTools.filter((t) => t.id !== pinnedTool.id);
+    
+    // Check if the pinned tool aligns with the selected category filter
+    const activeCategoryMeta = CATEGORY_REGISTRY.find((c) => c.id === activeCategoryId);
+    const categoryMatches = !activeCategoryId || (activeCategoryMeta && pinnedTool.category === activeCategoryMeta.label);
+
+    if (categoryMatches) {
+      // Prepend the pinned tool at the top of the list
+      filteredTools = [pinnedTool, ...withoutPinned];
+    }
+  }
 
   const activeCategoryMeta = CATEGORY_REGISTRY.find((c) => c.id === activeCategoryId);
 
   return (
     <div className="space-y-6">
+      {/* Pinned tool search match banner */}
+      {pinnedTool && (
+        <div
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border glass animate-[fade-in-up_0.3s_ease-out] gap-4"
+          style={{ borderColor: 'var(--accent-indigo)', background: 'var(--glass-bg)' }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-xl animate-bounce">📌</span>
+            <div>
+              <p className="text-xs font-bold t-text">
+                Showing <span style={{ color: 'var(--accent-indigo)' }}>{pinnedTool.name}</span> at the top of the list
+              </p>
+              <p className="text-[10px] t-text-muted mt-0.5">
+                Matched search query: &quot;<span className="italic font-medium">{pinnedFromQuery}</span>&quot; under Category: <span className="font-semibold">{pinnedTool.category}</span>.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={clearPinned}
+            className="text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-lg cursor-pointer transition-all shrink-0 shadow-sm"
+            style={{ background: 'var(--accent-indigo)', color: '#fff' }}
+            onMouseOver={(e) => (e.currentTarget.style.opacity = '0.85')}
+            onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
+          >
+            Clear Highlight
+          </button>
+        </div>
+      )}
+
       {/* Title Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-black text-white tracking-tight">
+          <h2 className="text-2xl font-black t-text tracking-tight">
             {activeCategoryMeta ? activeCategoryMeta.label : 'AI Stack Explorer'}
           </h2>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="t-text-secondary text-sm mt-1">
             {activeCategoryMeta
               ? activeCategoryMeta.description
               : 'Benchmark and find enterprise-grade tools across the AI stack.'}
@@ -59,41 +97,47 @@ export const ExplorerPage: React.FC = () => {
         </div>
 
         {/* View Toggle */}
-        <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-1">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer ${
-              viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Grid Card
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer ${
-              viewMode === 'table' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Table view
-          </button>
+        <div className="t-view-toggle rounded-lg p-1 flex">
+          {[
+            { mode: 'grid', label: '⊞ Grid Card' },
+            { mode: 'table', label: '☰ Table View' },
+          ].map(({ mode, label }) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode as 'grid' | 'table')}
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-all ${
+                viewMode === mode ? '' : 't-theme-btn-inactive'
+              }`}
+              style={
+                viewMode === mode
+                  ? { background: 'var(--accent-indigo)', color: '#fff' }
+                  : {}
+              }
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        {/* Left Filters column */}
+        {/* Filters */}
         <div className="lg:col-span-1">
           <FilterPanel />
         </div>
 
-        {/* Right content list */}
+        {/* Content */}
         <div className="lg:col-span-3 space-y-4">
-          {(loading || (activeCategoryId && loadingCategory === activeCategoryId)) ? (
+          {loading || (activeCategoryId && loadingCategory === activeCategoryId) ? (
             <LoadingSkeleton type={viewMode === 'grid' ? 'card' : 'table'} count={6} />
           ) : filteredTools.length === 0 ? (
-            <div className="glass rounded-xl p-12 text-center text-slate-450 border border-dashed border-slate-800">
+            <div
+              className="glass rounded-xl p-12 text-center"
+              style={{ border: '1px dashed var(--border-color)' }}
+            >
               <span className="text-3xl block mb-2">🔍</span>
-              <p className="font-semibold text-white">No tools match active criteria</p>
-              <p className="text-xs text-slate-400 mt-1">Try resetting filters or changing categories.</p>
+              <p className="font-semibold t-text">No tools match active criteria</p>
+              <p className="text-xs t-text-muted mt-1">Try resetting filters or changing categories.</p>
             </div>
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -107,7 +151,6 @@ export const ExplorerPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Slide Drawer/Modal details */}
       {selectedTool && (
         <ToolDetailPage tool={selectedTool} onClose={() => setSelectedTool(null)} />
       )}
