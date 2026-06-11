@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useComparisonStore } from '@store/useComparisonStore';
 import { useUIStore } from '@store/useUIStore';
 import { GlobalSearch } from '@components/GlobalSearch';
+import { DatasetUploadModal } from '@components/DatasetUploadModal';
 
 export const TopBar: React.FC = () => {
   const { selectedTools } = useComparisonStore();
   const { theme, setTheme } = useUIStore();
   const location = useLocation();
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const navItems = [
     { path: '/', label: 'Explorer' },
@@ -38,7 +40,7 @@ export const TopBar: React.FC = () => {
       <GlobalSearch />
 
       {/* Global Actions */}
-      <div className="flex items-center gap-4 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         {selectedTools.length > 0 && (
           <Link
             to="/compare"
@@ -58,6 +60,16 @@ export const TopBar: React.FC = () => {
             </span>
           </Link>
         )}
+
+        {/* Dataset Upload Trigger */}
+        <button
+          onClick={() => setUploadOpen(true)}
+          title="Upload Custom CSV Dataset"
+          className="t-btn-secondary text-[10px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-lg cursor-pointer transition-all border"
+          style={{ borderColor: 'var(--border-color)' }}
+        >
+          📤 Upload CSV
+        </button>
 
         {/* Theme Switcher */}
         <div className="t-theme-switcher flex">
@@ -85,6 +97,8 @@ export const TopBar: React.FC = () => {
           Enterprise Cloud Instance
         </div>
       </div>
+
+      <DatasetUploadModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
     </header>
   );
 };

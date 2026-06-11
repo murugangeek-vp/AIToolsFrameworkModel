@@ -1,0 +1,151 @@
+# Implementation Plan: AI Stack Explorer 2026 — V2 Upgrade
+
+Upgrade the existing project "AI Stack Explorer 2026" into **Version 2 — an Enterprise AI Engineering Intelligence Platform**. This plan transforms the platform into an enterprise-grade AI ecosystem analytics, benchmarking, governance, architecture recommendation, and AI SDLC intelligence platform.
+
+---
+
+## Current Features (Already Available)
+
+The following components are fully implemented and verified in the V1 build:
+
+1. **Lazy-loading Sidebar Categories**: Dynamically loads CSV datasets when clicking a category, preventing frontend bloat on startup.
+2. **Filtering Panel**: Implements dynamic range sliders for ratings/scores, checkboxes for capabilities, and license/pricing filters.
+3. **Detail Side Panel (Drawer)**: Renders comprehensive technical metrics, vendor documentation, and feature listings in a sliding drawer when a card or row is clicked.
+4. **Compare Mode**: Allows side-by-side comparison of up to 5 tools with dynamic heatmaps and radar charts.
+5. **Theme Selection System**: Renders three distinct visual themes: Onyx Cyber (Dark), E-Ink Paper (Light), and Classic Dev (VS Code editor layout).
+6. **Basic Scoring System**: Stores and displays normalized scores (0-100) for Latency, Security, Scalability, Cost Efficiency, Observability, and Developer Experience.
+7. **Basic Recommendation Wizard**: Selects individual tools based on simple budget, capabilities, and prioritize rules.
+8. **Initial Executive Dashboards**: Displays KPI cards and trend charts for AI Trends, Readiness, Cost, Latency, Security, and Ecosystem.
+9. **Global Search Bar**: Implements category-grouped search, Arrow key / Enter keyboard controls, and pins selected tools to the top of list views with a visual banner.
+
+---
+
+## Proposed V2 Feature Set
+
+### 1. Unified Real-Time Datasets (15 New CSV files)
+We will add 15 new CSV files containing realistic 2026 enterprise AI data, including frontier tools (GPT-5.5, Llama 3.3, DeepSeek R1, LangGraph, CrewAI, Qdrant, Pinecone, vLLM, AWS Bedrock, Azure AI Foundry, Vertex AI, Arize Phoenix, LangSmith, Feast, Airflow, Great Expectations, Dagster, Ray, KServe, PyRIT, TruLens, Collibra, OneTrust, etc.):
+- **Data Analytics:** `analytics_tools.csv`, `dashboard_platforms.csv`, `sql_engines.csv`
+- **Data Science:** `data_science_tools.csv`, `experiment_tracking.csv`, `visualization_libraries.csv`
+- **Machine Learning:** `ml_frameworks.csv`, `ml_algorithms.csv`, `recommendation_systems.csv`, `time_series_tools.csv`
+- **AI SDLC:** `ai_sdlc_tools.csv`, `model_registry.csv`, `feature_engineering.csv`
+- **AI Infrastructure:** `distributed_ai.csv` (complementing existing `inference_engines.csv` and `gpu_platforms.csv`)
+- **AI Evaluation & Safety:** `ai_evaluation_tools.csv`, `ai_safety_tools.csv`
+- **Enterprise Governance:** `lineage_tools.csv`, `compliance_tools.csv`
+
+### 2. Overhauled Enterprise Scoring Engine
+We will expand `AITool` and the Papaparse converter with two additional scoring metrics:
+- **AI Trust Score** (safeguards, alignment, alignment metrics)
+- **Production Reliability Score** (failover, SLA backing, cluster capabilities)
+We will implement a custom mathematical weighted scoring system to compute overall ranks dynamically:
+- Allows users to adjust priority weights dynamically in the UI.
+
+### 3. AI Architecture Copilot (Blueprint Recommendation Engine)
+Upgrade `RecommendPage.tsx` to add a secondary mode: **AI Architecture Copilot**.
+- Receives architecture inputs: Budget Strategy, Target Scale/Enterprise Size, Latency limits, Open-Source preferences, Cloud provider (AWS/Azure/GCP/On-Prem), Compliance, and capability requirements (RAG, Agentic).
+- Computes and constructs a complete, cohesive **Architecture Blueprint Stack**:
+  - Recommends 1 tool from each: LLM + Vector Database + Orchestration Framework + Observability Stack + Deployment Runtimes + Evaluation Frameworks + Governance Lineage.
+  - Formulates a visual architecture pipeline graph.
+  - Lists blueprint integration trade-offs, estimated token cost indicators, and compliance warnings.
+
+### 4. Expansion of Executive Dashboards
+Upgrade `DashboardPage.tsx` with five additional premium dashboards:
+- **Enterprise Adoption Dashboard:** Illustrates market penetration, deployment scale, and community stars by category.
+- **Governance Dashboard:** Visualizes compliance coverage rates (SOC2, HIPAA, GDPR) and risk matrix grids.
+- **Open Source vs Paid Dashboard:** Evaluates cost-to-flexibility ratio and local execution feasibility by category.
+- **AI Vendor Landscape Dashboard:** Renders a vendor landscape quadrant map showing vendor size, cloud hosting capabilities, and SDK maturity.
+- **AI Ecosystem Growth Dashboard:** Interactive timeline charts depicting GitHub growth and version releases.
+
+### 5. Dynamic CSV Upload & Schema Validation
+- Renders an **Upload Custom Dataset** drag-and-drop widget.
+- Checks header mapping against required `AITool` fields and checks data type schema rules (integers, strings, booleans).
+- Appends valid records to `useToolStore` on-the-fly, allowing custom benchmark datasets to inject into all pages instantly.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Schema Adaptations:**
+> Adding `ai_trust_score` and `production_reliability_score` requires extending `AITool.ts`. All existing 19 CSV files will load successfully without these columns, defaulting to `0` or baseline values automatically.
+> Do you approve this schema adjustment?
+>
+> **Interactive Weights configuration:**
+> Should we place the Scoring Weight sliders on a settings overlay panel or directly inside the Leaderboard view to make score recalibrations instantaneous? (We recommend placing them in a collapsible header on the Leaderboard).
+
+---
+
+## Open Questions
+
+> [!WARNING]
+> - **Visual Blueprint Render:** Do you have any preferences for the visual layout of the AI Architecture Blueprint Copilot? We plan to render a stacked flowchart matching the classic enterprise pipeline layout:
+>   `Data Pipeline -> Vector Search -> LLM Runtime -> Agentic Orchestration -> Observability -> Safety Guardrail`.
+
+---
+
+## Proposed Changes
+
+### Data Layer
+
+#### [NEW] [analytics_tools.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/analytics_tools.csv)
+#### [NEW] [dashboard_platforms.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/dashboard_platforms.csv)
+#### [NEW] [sql_engines.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/sql_engines.csv)
+#### [NEW] [data_science_tools.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/data_science_tools.csv)
+#### [NEW] [experiment_tracking.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/experiment_tracking.csv)
+#### [NEW] [visualization_libraries.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/visualization_libraries.csv)
+#### [NEW] [ml_frameworks.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/ml_frameworks.csv)
+#### [NEW] [ml_algorithms.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/ml_algorithms.csv)
+#### [NEW] [recommendation_systems.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/recommendation_systems.csv)
+#### [NEW] [time_series_tools.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/time_series_tools.csv)
+#### [NEW] [ai_sdlc_tools.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/ai_sdlc_tools.csv)
+#### [NEW] [model_registry.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/model_registry.csv)
+#### [NEW] [feature_engineering.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/feature_engineering.csv)
+#### [NEW] [distributed_ai.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/distributed_ai.csv)
+#### [NEW] [ai_evaluation_tools.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/ai_evaluation_tools.csv)
+#### [NEW] [ai_safety_tools.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/ai_safety_tools.csv)
+#### [NEW] [lineage_tools.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/lineage_tools.csv)
+#### [NEW] [compliance_tools.csv](file:///f:/AI/AIToolsFrameworkModel/public/data/compliance_tools.csv)
+
+### Model & Service Layer
+
+#### [MODIFY] [AITool.ts](file:///f:/AI/AIToolsFrameworkModel/src/types/AITool.ts)
+- Add `ai_trust_score` and `production_reliability_score` properties to `AITool` interface and update `SCORE_LABELS` metadata.
+- Expand `Category` enum and add all new categories.
+
+#### [MODIFY] [index.ts](file:///f:/AI/AIToolsFrameworkModel/src/types/index.ts)
+- Update `CATEGORY_REGISTRY` mapping to register all the new CSV files and category labels.
+
+#### [MODIFY] [CSVService.ts](file:///f:/AI/AIToolsFrameworkModel/src/services/CSVService.ts)
+- Map the new score fields from CSV rows in `mapRowToAITool`.
+
+### Component & Page Layer
+
+#### [MODIFY] [Sidebar.tsx](file:///f:/AI/AIToolsFrameworkModel/src/layouts/Sidebar.tsx)
+- Add the new categories group sub-headings (e.g. "Data Science", "AI SDLC & infra", "Enterprise Governance") for a clean nested UI structure, preventing long flat scrolls.
+
+#### [MODIFY] [ExplorerPage.tsx](file:///f:/AI/AIToolsFrameworkModel/src/pages/ExplorerPage.tsx)
+- Integrate custom weights configuration to adjust overall leaderboard rankings instantly.
+
+#### [MODIFY] [RecommendPage.tsx](file:///f:/AI/AIToolsFrameworkModel/src/pages/RecommendPage.tsx)
+- Add tab selection: **Standard Recommendation** vs. **AI Architecture Copilot (V2)**.
+- Implement the interactive Copilot blueprint form and visualization panel.
+
+#### [MODIFY] [DashboardPage.tsx](file:///f:/AI/AIToolsFrameworkModel/src/pages/DashboardPage.tsx)
+- Add new menu tabs for: Adoption, Governance, OS vs Paid, Vendor Landscape, Ecosystem Growth.
+
+#### [NEW] [DashboardsV2.tsx](file:///f:/AI/AIToolsFrameworkModel/src/dashboards/DashboardsV2.tsx)
+- Implement detailed layouts and recharts configurations for the 5 new dashboards.
+
+#### [NEW] [DatasetUploadModal.tsx](file:///f:/AI/AIToolsFrameworkModel/src/components/DatasetUploadModal.tsx)
+- Renders drag and drop area, implements schema checks, and updates toolStore dynamically.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Run `npx tsc --noEmit` to verify type checker consistency.
+- Verify hot reload runs clean.
+
+### Manual Verification
+- Test importing custom CSVs using dynamic schema check, verifying they render instantly in explorer tables.
+- Validate architecture blueprint output logic across multiple provider selections.

@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useToolStore } from '@store/useToolStore';
 import { useFilterStore } from '@store/useFilterStore';
 import { useUIStore } from '@store/useUIStore';
+import { useScoringStore } from '@store/useScoringStore';
 import { applyFilters } from '@utils/filterEngine';
+import { calculateWeightedRating } from '@utils/scoringEngine';
 import { ToolCard } from '@components/ToolCard';
 import { ToolTable } from '@components/ToolTable';
 import { FilterPanel } from '@filters/FilterPanel';
+import { ScoringWeightsPanel } from '@components/ScoringWeightsPanel';
 import { LoadingSkeleton } from '@components/LoadingSkeleton';
 import { ToolDetailPage } from './ToolDetailPage';
 import type { AITool } from '@types-app/AITool';
@@ -14,8 +17,10 @@ import { CATEGORY_REGISTRY } from '@types-app/index';
 export const ExplorerPage: React.FC = () => {
   const { tools, loading, loadAll, loadCategory, loadingCategory } = useToolStore();
   const { filters } = useFilterStore();
+  const { weights } = useScoringStore();
   const { activeCategoryId, viewMode, setViewMode, pinnedToolId, pinnedFromQuery, clearPinned } = useUIStore();
   const [selectedTool, setSelectedTool] = useState<AITool | null>(null);
+  const [showWeights, setShowWeights] = useState(false);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
@@ -26,17 +31,25 @@ export const ExplorerPage: React.FC = () => {
     }
   }, [activeCategoryId, loadCategory]);
 
-  // Apply filters
+  // Apply dynamic weights first, then filter, and sort descending
   let baseFilteredTools = tools.filter((t) => {
     if (!activeCategoryId) return true;
     const meta = CATEGORY_REGISTRY.find((c) => c.id === activeCategoryId);
     return meta ? t.category === meta.label : true;
   });
 
-  let filteredTools = applyFilters(baseFilteredTools, filters);
+  const weightedTools = baseFilteredTools.map((t) => ({
+    ...t,
+    overall_rating: calculateWeightedRating(t, weights),
+  }));
+
+  let filteredTools = applyFilters(weightedTools, filters);
+  
+  // Sort by overall_rating descending
+  filteredTools.sort((a, b) => b.overall_rating - a.overall_rating);
 
   // If a tool is pinned, bubble it to the top of the filtered list
-  const pinnedTool = pinnedToolId ? tools.find((t) => t.id === pinnedToolId) : null;
+  const pinnedTool = pinnedToolId ? weightedTools.find((t) => t.id === pinnedToolId) : null;
   if (pinnedTool) {
     const withoutPinned = filteredTools.filter((t) => t.id !== pinnedTool.id);
     
@@ -96,29 +109,50 @@ export const ExplorerPage: React.FC = () => {
           </p>
         </div>
 
-        {/* View Toggle */}
-        <div className="t-view-toggle rounded-lg p-1 flex">
-          {[
-            { mode: 'grid', label: '⊞ Grid Card' },
-            { mode: 'table', label: '☰ Table View' },
-          ].map(({ mode, label }) => (
-            <button
-              key={mode}
-              onClick={() => setViewMode(mode as 'grid' | 'table')}
-              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-all ${
-                viewMode === mode ? '' : 't-theme-btn-inactive'
-              }`}
-              style={
-                viewMode === mode
-                  ? { background: 'var(--accent-indigo)', color: '#fff' }
-                  : {}
-              }
-            >
-              {label}
-            </button>
-          ))}
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setShowWeights(!showWeights)}
+            className="text-xs font-bold px-3.5 py-1.5 rounded-md cursor-pointer transition-all border"
+            style={{
+              background: showWeights ? 'var(--accent-indigo)' : 'var(--btn-secondary-bg)',
+              color: showWeights ? '#fff' : 'var(--text-color)',
+              borderColor: showWeights ? 'var(--accent-indigo)' : 'var(--border-color)',
+            }}
+          >
+            ⚖️ Tuning Weights {showWeights ? '▲' : '▼'}
+          </button>
+
+          <div className="t-view-toggle rounded-lg p-1 flex">
+            {[
+              { mode: 'grid', label: '⊞ Grid Card' },
+              { mode: 'table', label: '☰ Table View' },
+            ].map(({ mode, label }) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode as 'grid' | 'table')}
+                className={`px-3.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-all ${
+                  viewMode === mode ? '' : 't-theme-btn-inactive'
+                }`}
+                style={
+                  viewMode === mode
+                    ? { background: 'var(--accent-indigo)', color: '#fff' }
+                    : {}
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Scoring Weight Control Sliders Panel */}
+      {showWeights && (
+        <div className="animate-[fade-in-up_0.2s_ease-out]">
+          <ScoringWeightsPanel />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* Filters */}

@@ -8,8 +8,14 @@ import {
   CostOptimizationDashboard,
   LatencyDashboard,
   SecurityDashboard,
-  EcosystemDashboard,
 } from '@dashboards/Dashboards';
+import {
+  EnterpriseAdoptionDashboard,
+  GovernanceDashboard,
+  OSVsCommercialDashboard,
+  VendorLandscapeDashboard,
+  EcosystemGrowthDashboard,
+} from '@dashboards/DashboardsV2';
 
 export const DashboardPage: React.FC = () => {
   const { tools, loading, loadAll } = useToolStore();
@@ -20,10 +26,14 @@ export const DashboardPage: React.FC = () => {
   const dashTabs = [
     { id: 'trends', label: 'AI Trends', component: TrendsDashboard },
     { id: 'enterprise', label: 'Enterprise Readiness', component: EnterpriseReadinessDashboard },
+    { id: 'adoption', label: 'Enterprise Adoption', component: EnterpriseAdoptionDashboard },
     { id: 'cost', label: 'Cost Optimization', component: CostOptimizationDashboard },
-    { id: 'latency', label: 'Latency', component: LatencyDashboard },
+    { id: 'latency', label: 'Latency Benchmark', component: LatencyDashboard },
     { id: 'security', label: 'AI Security', component: SecurityDashboard },
-    { id: 'ecosystem', label: 'Ecosystem Maturity', component: EcosystemDashboard },
+    { id: 'governance', label: 'Governance & Risk', component: GovernanceDashboard },
+    { id: 'os-vs-paid', label: 'Open Source vs Paid', component: OSVsCommercialDashboard },
+    { id: 'vendor-landscape', label: 'Vendor Landscape', component: VendorLandscapeDashboard },
+    { id: 'ecosystem', label: 'Ecosystem Growth', component: EcosystemGrowthDashboard },
   ];
 
   const currentTab = dashTabs.find((t) => t.id === activeDashboard) || dashTabs[0];
@@ -44,7 +54,7 @@ export const DashboardPage: React.FC = () => {
             key={tab.id}
             onClick={() => setActiveDashboard(tab.id as any)}
             className={`text-xs px-4 py-2.5 rounded-lg transition-all cursor-pointer font-bold uppercase tracking-wider ${
-              activeDashboard === tab.id ? 'shadow-glow' : 't-unselected'
+              activeDashboard === tab.id ? 'shadow-glow animate-pulse' : 't-unselected'
             }`}
             style={
               activeDashboard === tab.id

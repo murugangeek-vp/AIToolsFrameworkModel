@@ -29,6 +29,26 @@ export enum Category {
   GPU_PLATFORMS = 'GPU Platforms',
   DATA_PIPELINES = 'Data Pipelines',
   WORKFLOW_ORCHESTRATION = 'Workflow Orchestration',
+  
+  // V2 Category Extensions
+  BI_TOOLS = 'BI Tools',
+  DASHBOARD_PLATFORMS = 'Dashboard Platforms',
+  SQL_ENGINES = 'SQL Engines',
+  DATA_SCIENCE_TOOLS = 'Data Science Tools',
+  EXPERIMENT_TRACKING = 'Experiment Tracking',
+  VISUALIZATION_LIBRARIES = 'Visualization Libraries',
+  ML_FRAMEWORKS = 'ML Frameworks',
+  ML_ALGORITHMS = 'ML Algorithms',
+  RECOMMENDATION_SYSTEMS = 'Recommendation Systems',
+  TIME_SERIES_TOOLS = 'Time Series Tools',
+  AI_SDLC_TOOLS = 'AI SDLC Tools',
+  MODEL_REGISTRY = 'Model Registries',
+  FEATURE_ENGINEERING = 'Feature Engineering',
+  DISTRIBUTED_AI = 'Distributed AI',
+  AI_EVALUATION_TOOLS = 'AI Evaluation Tools',
+  AI_SAFETY_TOOLS = 'AI Safety Tools',
+  LINEAGE_TOOLS = 'Lineage Tools',
+  COMPLIANCE_TOOLS = 'Compliance Tools',
 }
 
 export type PricingModel = 'Free' | 'Open Source' | 'Freemium' | 'Subscription' | 'Pay-per-use' | 'Enterprise' | 'Custom';
@@ -67,6 +87,8 @@ export interface IComparable {
   ecosystem_maturity_score: number;
   enterprise_readiness_score: number;
   developer_experience_score: number;
+  ai_trust_score?: number;
+  production_reliability_score?: number;
 }
 
 /** Anything that can be bookmarked/favorited */
@@ -131,6 +153,10 @@ export interface AITool extends IFilterable, IComparable, IBookmarkable, IExport
   maintenance_score: number;
   benchmark_score: number;
   overall_rating: number;
+  
+  // V2 Overhauls
+  ai_trust_score: number;
+  production_reliability_score: number;
 
   // Capabilities
   best_for: string;
@@ -187,6 +213,8 @@ export type ScoreKey = keyof Pick<
   | 'benchmark_score'
   | 'community_score'
   | 'overall_rating'
+  | 'ai_trust_score'
+  | 'production_reliability_score'
 >;
 
 export const SCORE_LABELS: Record<ScoreKey, string> = {
@@ -206,4 +234,6 @@ export const SCORE_LABELS: Record<ScoreKey, string> = {
   benchmark_score: 'Benchmark',
   community_score: 'Community',
   overall_rating: 'Overall Rating',
+  ai_trust_score: 'AI Trust Score',
+  production_reliability_score: 'Prod Reliability',
 };

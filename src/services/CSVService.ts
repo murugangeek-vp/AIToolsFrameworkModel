@@ -85,6 +85,8 @@ function mapRowToAITool(row: Record<string, string>): AITool {
     enterprise_clients: row.enterprise_clients?.trim() || '',
     top_competitors: row.top_competitors?.trim() || '',
     tags: row.tags?.trim() || '',
+    ai_trust_score: parseNumber(row.ai_trust_score || row.trust_score),
+    production_reliability_score: parseNumber(row.production_reliability_score || row.reliability_score || row.prod_reliability_score),
     last_updated: row.last_updated?.trim() || new Date().toISOString().split('T')[0],
   };
 }
