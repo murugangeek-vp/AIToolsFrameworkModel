@@ -5,6 +5,7 @@ import { ComparisonPage } from '@pages/ComparisonPage';
 import { DashboardPage } from '@pages/DashboardPage';
 import { RecommendPage } from '@pages/RecommendPage';
 import { CompareButton } from '@components/CompareButton';
+import { StagingDashboard } from '@pages/StagingDashboard';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/dashboards" element={<DashboardPage />} />
           <Route path="/recommend" element={<RecommendPage />} />
           <Route path="/compare" element={<ComparisonPage />} />
+          <Route path="/staging" element={<StagingDashboard />} />
         </Routes>
         <CompareButton />
       </AppLayout>

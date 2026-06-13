@@ -1,0 +1,65 @@
+# Autonomous Discovery and Delta Detection Architecture
+
+This implementation plan outlines the architecture for transforming the system from a passive "refresh" tool into an autonomous AI tool discovery and lifecycle tracking engine.
+
+## User Review and Decisions
+- **Platforms/Tools**: The scanner will monitor GitHub, HuggingFace, Replit, and top industry aggregators (via Tavily/DuckDuckGo web search).
+- **Scheduling**: The Discovery Pipeline will run daily at 8:00 PM IST using a background scheduler (e.g., `APScheduler`) AND will also be triggered manually when the user clicks the "Refresh" option in the UI.
+- **LLM Strategy**: The system will implement a **Fallback Switch**. It will attempt to use the local `llama3.2:1b` model first. If the local model fails, returns null, or achieves a validation score below 90%, the system will automatically switch to a cloud provider (e.g., OpenAI or Anthropic) to complete the extraction.
+
+---
+
+## Proposed Architecture
+
+### 1. Delta Detection & Deprecation Pipeline (Modifying Existing Graph)
+We will upgrade the existing `ToolExtractionState` graph to support "Diffing".
+
+#### [MODIFY] `backend/agents/agent_nodes.py`
+- **Schema Addition**: Add `original_data: Dict[str, Any]` and `diff_summary: str` to `ToolExtractionState`.
+- **Extraction Node Update**: Inject an explicit prompt rule: *"Analyze the context to determine if the tool is discontinued, sunset, or deprecated. Output this in a new field: `lifecycle_status`"*.
+- **[NEW] Diffing Node**: Create a new node `diffing_node` that runs after the `revalidator_node`. It will programmatically compare `extracted_data` against `original_data`.
+  - It generates a precise changelog (e.g., *"Version bumped from 1.0 to 2.0"*).
+  - If `lifecycle_status == 'Deprecated'`, it flags the record with high priority.
+
+#### [MODIFY] `backend/agents/graph.py`
+- Wire the new `diffing_node` into the existing `StateGraph` right before the `END` condition.
+
+#### [MODIFY] `backend/agents/llm_factory.py`
+- **Fallback Logic**: Enhance `LLMFactory` to support an ordered fallback list. If the local Ollama invoke fails or the Revalidation node scores it < 90%, the extraction node will re-run using a cloud provider (e.g., `ChatOpenAI`).
+
+#### [MODIFY] `backend/api/router.py` & `backend/main.py`
+- **Manual Trigger**: Update the `/refresh` endpoint to spawn both the standard diffing pipeline AND the discovery pipeline.
+- **Scheduler**: Integrate `APScheduler` in `main.py` to trigger the discovery/refresh pipeline daily at 8:00 PM IST (`cron` expression: `0 20 * * *` in IST or `30 14 * * *` UTC).
+- **Staging Logic**: Pass the current CSV row data into `initial_state["original_data"]`. Update `models.StagingRecord` to store the `diff_summary` inside `agent_reasoning`.
+
+---
+
+### 2. Autonomous Discovery Pipeline
+We will build a completely new LangGraph workflow called `DiscoveryGraph` that operates independently from the CSV files.
+
+#### [NEW] `backend/agents/discovery_graph.py` & `discovery_nodes.py`
+We will design a multi-agent graph with the following nodes:
+
+1. **Market Scanner Agent (Tool Caller)**: 
+   - Uses **Tavily / DuckDuckGo** for general tech news ("New AI tools released this week").
+   - Uses the **GitHub API** to identify trending AI repositories.
+   - Uses the **HuggingFace API** to identify newly released high-impact models.
+   - Uses broad searches for **Replit** templates and other top ecosystems.
+2. **Parser Agent (LLM)**: 
+   - Uses the LLM Fallback strategy (Local -> Cloud) to reliably extract a JSON list of identified entities: `[{ "name": "Claude Fable 5", "category": "LLM", "source": "huggingface.co/..." }]`.
+3. **Deduplicator Agent (Python Logic)**:
+   - Loads all existing tools from `public/data/*.csv`.
+   - Performs fuzzy matching to drop entities we already track.
+4. **Trigger Agent (Integration)**:
+   - For every *novel* entity left in the list, it spawns an asynchronous task calling the original `graph_app.invoke()` to perform deep research and extraction on that specific tool.
+   - These brand new tools then appear in the Staging Dashboard marked as `[NEW DISCOVERY]`.
+
+## Verification Plan
+
+### Automated Tests
+- Create a dummy test state in `test_invoke.py` passing an outdated version of "LangGraph" to verify the `diffing_node` correctly identifies the delta.
+- Run a standalone unit test for the `DiscoveryGraph` mocking a news article about a fake tool (e.g., "MegaAI v1") and verify it survives deduplication and triggers the extraction graph.
+
+### Manual Verification
+- Trigger the Refresh pipeline and ensure the Staging UI accurately displays the `diff_summary`.
+- Trigger the Discovery pipeline manually and verify that completely new records appear in the UI.

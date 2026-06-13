@@ -1,0 +1,63 @@
+# Autonomous Discovery and Delta Detection Architecture
+
+This implementation plan outlines the architecture for transforming the system from a passive "refresh" tool into an autonomous AI tool discovery and lifecycle tracking engine.
+
+## User Review Required
+> [!IMPORTANT]
+> Please review the addition of the **Discovery Pipeline** and the proposed MCP/Tool usage (ArXiv, GitHub, Tavily). Are there any specific platforms you want the scanner to monitor closely (e.g., HuggingFace, X/Twitter)?
+
+## Open Questions
+- **Scheduling**: Should the Discovery Pipeline run as a background Cron job (e.g., daily at midnight), or should it be triggered manually via a "Run Discovery" button in the frontend?
+- **Cloud LLM Requirement**: Since the Discovery pipeline requires parsing large unstructured feeds (ArXiv abstracts, tech news, GitHub repos) to identify novel tool names, relying on the local `llama3.2:1b` might result in severe hallucinations. Do we have approval to integrate a cloud provider (e.g., OpenAI or Anthropic) for the Discovery LLM parsing node?
+
+---
+
+## Proposed Architecture
+
+### 1. Delta Detection & Deprecation Pipeline (Modifying Existing Graph)
+We will upgrade the existing `ToolExtractionState` graph to support "Diffing".
+
+#### [MODIFY] `backend/agents/agent_nodes.py`
+- **Schema Addition**: Add `original_data: Dict[str, Any]` and `diff_summary: str` to `ToolExtractionState`.
+- **Extraction Node Update**: Inject an explicit prompt rule: *"Analyze the context to determine if the tool is discontinued, sunset, or deprecated. Output this in a new field: `lifecycle_status`"*.
+- **[NEW] Diffing Node**: Create a new node `diffing_node` that runs after the `revalidator_node`. It will programmatically compare `extracted_data` against `original_data`.
+  - It generates a precise changelog (e.g., *"Version bumped from 1.0 to 2.0"*).
+  - If `lifecycle_status == 'Deprecated'`, it flags the record with high priority.
+
+#### [MODIFY] `backend/agents/graph.py`
+- Wire the new `diffing_node` into the existing `StateGraph` right before the `END` condition.
+
+#### [MODIFY] `backend/api/router.py`
+- When triggering a refresh, pass the current CSV row data into `initial_state["original_data"]`.
+- Update the `models.StagingRecord` to store the `diff_summary` inside `agent_reasoning` so the UI highlights exactly what changed.
+
+---
+
+### 2. Autonomous Discovery Pipeline
+We will build a completely new LangGraph workflow called `DiscoveryGraph` that operates independently from the CSV files.
+
+#### [NEW] `backend/agents/discovery_graph.py` & `discovery_nodes.py`
+We will design a multi-agent graph with the following nodes:
+
+1. **Market Scanner Agent (Tool Caller)**: 
+   - Uses **Tavily / DuckDuckGo** for general tech news ("New AI tools released this week").
+   - Uses the **ArXiv Plugin** (`literature-search-arxiv`) to scan abstracts for newly published model architectures.
+   - Uses **GitHub API / Web Search** for trending AI repositories.
+2. **Parser Agent (LLM)**: 
+   - Reads the raw contexts and extracts a JSON list of identified entities: `[{ "name": "Claude Fable 5", "category": "LLM", "source": "arxiv.org/..." }]`.
+3. **Deduplicator Agent (Python Logic)**:
+   - Loads all existing tools from `public/data/*.csv`.
+   - Performs fuzzy matching to drop entities we already track.
+4. **Trigger Agent (Integration)**:
+   - For every *novel* entity left in the list, it spawns an asynchronous task calling the original `graph_app.invoke()` to perform deep research and extraction on that specific tool.
+   - These brand new tools then appear in the Staging Dashboard marked as `[NEW DISCOVERY]`.
+
+## Verification Plan
+
+### Automated Tests
+- Create a dummy test state in `test_invoke.py` passing an outdated version of "LangGraph" to verify the `diffing_node` correctly identifies the delta.
+- Run a standalone unit test for the `DiscoveryGraph` mocking a news article about a fake tool (e.g., "MegaAI v1") and verify it survives deduplication and triggers the extraction graph.
+
+### Manual Verification
+- Trigger the Refresh pipeline and ensure the Staging UI accurately displays the `diff_summary`.
+- Trigger the Discovery pipeline manually and verify that completely new records appear in the UI.

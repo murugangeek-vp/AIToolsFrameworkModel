@@ -4,12 +4,42 @@ import { useComparisonStore } from '@store/useComparisonStore';
 import { useUIStore } from '@store/useUIStore';
 import { GlobalSearch } from '@components/GlobalSearch';
 import { DatasetUploadModal } from '@components/DatasetUploadModal';
+import { Settings, RefreshCw, Database } from 'lucide-react';
 
 export const TopBar: React.FC = () => {
   const { selectedTools } = useComparisonStore();
   const { theme, setTheme } = useUIStore();
   const location = useLocation();
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
+
+  const triggerRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetch('http://localhost:8000/api/refresh', { method: 'POST' });
+      
+      const poll = setInterval(async () => {
+        try {
+          const res = await fetch('http://localhost:8000/api/status');
+          const data = await res.json();
+          if (!data.is_refreshing) {
+            clearInterval(poll);
+            setIsRefreshing(false);
+            if (data.last_refresh_time) {
+              setLastRefreshed(new Date(data.last_refresh_time).toLocaleString());
+            }
+          }
+        } catch (err) {
+          console.error("Polling error", err);
+        }
+      }, 2000);
+      
+    } catch (e) {
+      console.error(e);
+      setIsRefreshing(false);
+    }
+  };
 
   const navItems = [
     { path: '/', label: 'Explorer' },
@@ -65,11 +95,38 @@ export const TopBar: React.FC = () => {
         <button
           onClick={() => setUploadOpen(true)}
           title="Upload Custom CSV Dataset"
-          className="t-btn-secondary text-[10px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-lg cursor-pointer transition-all border"
+          className="t-btn-secondary text-[10px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-lg cursor-pointer transition-all border hidden lg:block"
           style={{ borderColor: 'var(--border-color)' }}
         >
-          📤 Upload CSV
+          📤 Upload
         </button>
+
+        {/* Data Refresh Group */}
+        <div className="flex items-center gap-2 border-l border-white/10 pl-3">
+          {lastRefreshed && (
+            <span className="text-[10px] text-gray-400 hidden lg:block">
+              Refreshed: {lastRefreshed}
+            </span>
+          )}
+          <button
+            onClick={triggerRefresh}
+            disabled={isRefreshing}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh Data via AI Pipeline"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
+          </button>
+          <Link
+            to="/staging"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+            title="Staging Dashboard"
+          >
+            <Database className="w-4 h-4" />
+          </Link>
+          <button className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all" title="Settings">
+            <Settings className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Theme Switcher */}
         <div className="t-theme-switcher flex">

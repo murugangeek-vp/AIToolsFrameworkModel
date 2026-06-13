@@ -1,0 +1,100 @@
+# Goal Description
+
+Implement an automated and manual data refresh pipeline using a Python-based Multi-Agent architecture. The system will parallelize data scraping and extraction using LLMs and web search to keep all 37 CSV categories updated. It will stage the extracted data in a database for human confirmation before writing back to the CSVs. The architecture will be production-ready, utilizing Docker, Postgres, Langfuse for observability, and Ragas for evaluation.
+
+> [!WARNING]
+> This is a significant architectural expansion. It introduces a separate Python backend service alongside the existing React frontend, requiring Docker Compose to orchestrate the entire application.
+
+## User Review Required & Open Questions
+
+Before proceeding with the code, please provide feedback on the following design decisions:
+
+1.  **Agentic Framework:** Do you have a preference for the Multi-Agent framework? I recommend **LangGraph** or **CrewAI** for parallel orchestration of category scrapers.
+2.  **Web Search Provider:** Which search API should the agents use (e.g., Tavily, Serper, Bing Search)?
+3.  **LLM Provider:** Which LLM provider should the agents use (e.g., OpenAI `gpt-4o`, Anthropic `claude-3-5-sonnet`)?
+4.  **Human Confirmation Workflow:** My proposed approach is to save scraped data into a PostgreSQL `staging_records` table. The React frontend will have a new page (e.g., "Pending Approvals") where a user can Review -> Approve/Reject. Once approved, the Python backend writes to the CSVs. Does this align with your vision?
+5.  **Postgres Role:** You mentioned Postgres and "if request RAG". Postgres will be used to store the staging data and audit logs. Should we also use pgvector to store vector embeddings of the AI tools for a future conversational RAG feature?
+
+## Proposed Changes
+
+---
+
+### Frontend UI (React / TypeScript)
+
+UI updates to support triggering the pipeline and reviewing the data.
+
+#### [MODIFY] [TopBar.tsx](file:///f:/AI/AIToolsFrameworkModel/src/layouts/TopBar.tsx)
+- Add a "Settings" (⚙️) icon.
+- Add a "Refresh Data" button/icon.
+- Display "Last Refreshed: [Date Time]" fetched from the backend.
+
+#### [NEW] [StagingDashboard.tsx](file:///f:/AI/AIToolsFrameworkModel/src/pages/StagingDashboard.tsx)
+- A new page for Human Confirmation. It will fetch pending records from the Python backend and allow users to Approve/Edit/Reject new AI tools before they are written to the CSVs.
+
+#### [MODIFY] [App.tsx](file:///f:/AI/AIToolsFrameworkModel/src/App.tsx)
+- Add the route for the Staging Dashboard.
+
+---
+
+### Backend (Python Service)
+
+A new backend service built with clean architecture and SOLID principles.
+
+#### [NEW] `backend/requirements.txt`
+- Dependencies: `fastapi`, `uvicorn`, `langchain`, `langgraph` (or crewai), `sqlalchemy`, `psycopg2-binary`, `langfuse`, `ragas`, `apscheduler` (for cron), `pandas`.
+
+#### [NEW] `backend/main.py`
+- FastAPI application entry point. Exposes endpoints for:
+  - `POST /api/refresh`: Manually trigger the pipeline.
+  - `GET /api/status`: Get the status of the current run and last refreshed time.
+  - `GET /api/staging`: Get pending records for human review.
+  - `POST /api/staging/{id}/approve`: Confirm a record.
+
+#### [NEW] `backend/scheduler.py`
+- Setup `APScheduler` to run the refresh pipeline automatically every day at 6:00 PM IST.
+
+#### [NEW] `backend/agents/`
+- **Supervisor Agent:** Orchestrates the workflow, reading the CSV definitions and spinning up parallel sub-agents.
+- **Researcher Agent:** Uses Web Search to find new tools and updates for existing tools based on category definitions.
+- **Extraction Agent:** Uses LLMs to structure the unstructured web data into the exact CSV schema format. Validates data types.
+
+#### [NEW] `backend/db/`
+- SQLAlchemy models and configuration for PostgreSQL.
+- `StagingRecord` model: Stores proposed changes (new row or diff of existing row) pending human confirmation.
+- `AuditLog` model: Highly traceable logs of when an agent ran, what it found, and Langfuse trace IDs.
+
+#### [NEW] `backend/evaluation/`
+- Integration with Langfuse for prompt tracking and observability.
+- Integration with Ragas to score the extracted context (Faithfulness, Answer Relevance).
+
+---
+
+### Infrastructure & Deployment
+
+Containerization to run the system seamlessly.
+
+#### [NEW] [Dockerfile (Frontend)](file:///f:/AI/AIToolsFrameworkModel/Dockerfile)
+- Multi-stage build for the Vite/React application.
+
+#### [NEW] [Dockerfile (Backend)](file:///f:/AI/AIToolsFrameworkModel/backend/Dockerfile)
+- Dockerfile for the Python FastAPI application.
+
+#### [NEW] [docker-compose.yml](file:///f:/AI/AIToolsFrameworkModel/docker-compose.yml)
+- Orchestrates three containers:
+  1. `frontend`: React app (Port 5173).
+  2. `backend`: Python FastAPI app (Port 8000).
+  3. `db`: PostgreSQL database (Port 5432).
+
+## Verification Plan
+
+### Automated Tests
+- Run Python unit tests for the agent extraction logic using mocked web search responses.
+- Verify Langfuse traces are generated upon API calls.
+
+### Manual Verification
+- `docker-compose up --build` successfully starts all three services.
+- Click "Refresh" on the frontend TopBar.
+- Check backend logs to see agents running in parallel.
+- Verify new records appear in the "Staging Dashboard" on the frontend.
+- Approve a record and verify the corresponding `.csv` file in `public/data` is updated correctly.
+- Verify the 6 PM IST cron job triggers appropriately.
