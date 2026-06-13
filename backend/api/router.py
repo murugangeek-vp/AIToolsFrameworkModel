@@ -98,24 +98,31 @@ def trigger_refresh_pipeline():
                 if langfuse_handler is not None:
                     try:
                         run_id = langfuse_handler.get_trace_id()
+                        print(f"DEBUG: Extracted trace_id={run_id} for {tool_name}", flush=True)
                         langfuse_handler.flush()
+                        print(f"DEBUG: Handler flushed for trace {run_id}", flush=True)
                     except Exception as e:
-                        print(f"Warning handling langfuse handler post-run: {e}", flush=True)
+                        print(f"WARNING: handling langfuse handler post-run: {type(e).__name__}: {e}", flush=True)
+                        import traceback
+                        traceback.print_exc()
 
                 if HAS_LANGFUSE and run_id is not None:
                     try:
                         lf = Langfuse()
                         accuracy_score = 1.0 if final_state.get('validation_passed') else 0.0
+                        print(f"DEBUG: Pushing Langfuse score for trace {run_id}: validation={final_state.get('validation_passed')}", flush=True)
                         lf.score(
                             trace_id=run_id,
                             name="accuracy",
                             value=accuracy_score,
                             comment="Automatic Validation/Ragas proxy score"
                         )
-                        lf.trace(id=run_id, metadata={"source_urls": final_state.get("source_urls", [])})
                         lf.flush()
+                        print(f"DEBUG: Score pushed and flushed for trace {run_id}", flush=True)
                     except Exception as e:
-                        print(f"Failed to push Langfuse score: {e}", flush=True)
+                        print(f"ERROR: Failed to push Langfuse score: {type(e).__name__}: {e}", flush=True)
+                        import traceback
+                        traceback.print_exc()
                 
                 # Include diff summary in agent_reasoning for visibility in UI
                 reasoning = f"Validation passed: {final_state.get('validation_passed')}. Diff: {final_state.get('diff_summary', '')}"
