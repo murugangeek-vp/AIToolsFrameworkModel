@@ -214,7 +214,69 @@ def approve_record(record_id: int, db: Session = Depends(get_db)):
     if record.status != "pending":
         raise HTTPException(status_code=400, detail="Record is not pending")
     
-    # TODO: Write to CSV logic here
+    import os
+    import csv
+
+    # Write to CSV logic
+    if record.category and record.proposed_data:
+        # Determine CSV path
+        csv_filename = record.category
+        if not csv_filename.endswith(".csv"):
+            csv_filename += ".csv"
+        
+        # Look in container path or local repo
+        csv_path = f"/app/data/{csv_filename}"
+        if not os.path.exists(csv_path):
+            repo_csv_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', 'public', 'data'))
+            csv_path = os.path.join(repo_csv_dir, csv_filename)
+        
+        if os.path.exists(csv_path):
+            try:
+                # Read existing rows
+                with open(csv_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    reader = csv.reader(f)
+                    rows = list(reader)
+                
+                if rows:
+                    headers = rows[0]
+                    updated = False
+                    new_row = []
+                    for header in headers:
+                        # Try exact match, then lowercase/underscore
+                        val = record.proposed_data.get(header)
+                        if val is None:
+                            val = record.proposed_data.get(header.lower().replace(" ", "_"))
+                        if val is None:
+                            val = record.proposed_data.get(header.strip())
+                        new_row.append(str(val) if val is not None else "")
+                    
+                    # Check if we are updating an existing record
+                    if record.original_id:
+                        for i, row in enumerate(rows):
+                            if i == 0: continue # Skip header
+                            if len(row) > 0 and row[0] == record.original_id:
+                                # Preserve ID if it got lost in the new row
+                                if not new_row[0]:
+                                    new_row[0] = row[0]
+                                rows[i] = new_row
+                                updated = True
+                                break
+                    
+                    if not updated:
+                        # Append new row
+                        import uuid
+                        if not new_row[0]:
+                            new_row[0] = record.original_id or f"tool_{uuid.uuid4().hex[:8]}"
+                        rows.append(new_row)
+                    
+                    # Write back to file
+                    with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+                        writer = csv.writer(f)
+                        writer.writerows(rows)
+            except Exception as e:
+                print(f"Failed to update CSV {csv_path}: {e}")
+        else:
+            print(f"Warning: CSV file {csv_path} not found. Cannot write approved data.")
     
     if record.trace_id:
         try:
