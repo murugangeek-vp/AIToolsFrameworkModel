@@ -26,3 +26,7 @@ dist-ssr
 # TS Build Info
 *.tsbuildinfo
 .tmp/
+
+# Environment files
+.env
+*.env
