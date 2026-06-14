@@ -183,7 +183,7 @@ graph LR
     classDef slot fill:#10b981,color:#fff,stroke:#047857;
     classDef output fill:#f59e0b,color:#fff,stroke:#d97706;
 
-    subgraph User Inputs
+    subgraph UserInputs [User Inputs]
         C1[Scale: Small/Med/Enterprise]:::criteria
         C2[Budget: Low/Balanced/Premium]:::criteria
         C3[Cloud: AWS/Azure/GCP/Hybrid/On-Prem]:::criteria
@@ -191,7 +191,7 @@ graph LR
         C5[Preferences: Open Source / Latency Limits]:::criteria
     end
 
-    subgraph Copilot Engine Architecture Pipeline
+    subgraph CopilotEngineArchitecturePipeline [Copilot Engine Architecture Pipeline]
         LLM[Foundation LLM Slot]:::slot
         VDB[Vector Database Slot]:::slot
         Orch[Orchestrator & Agents Slot]:::slot

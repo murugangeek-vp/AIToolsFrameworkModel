@@ -9,15 +9,15 @@ graph TD
     subgraph Client [Browser Environment]
         A[React Application] --> B(React Router)
         
-        subgraph State Management [Zustand Store]
+        subgraph StateManagement [Zustand Store]
             C[UI Store]
             D[Filter Store]
             E[Comparison Store]
         end
         
-        A --> State Management
+        A --> StateManagement
         
-        subgraph UI Components [Components & Pages]
+        subgraph UIComponents [Components & Pages]
             F[Explorer Page]
             G[Dashboard Page]
             H[Recommend Page]
@@ -27,20 +27,20 @@ graph TD
             L[TailwindCSS Styling]
         end
         
-        B --> UI Components
-        UI Components --> State Management
+        B --> UIComponents
+        UIComponents --> StateManagement
     end
     
-    subgraph Data Layer [Data Management]
+    subgraph DataLayer [Data Management]
         M[Static CSV Files]
         N[PapaParse CSV Parser]
         O[Custom CSV Upload]
     end
     
-    UI Components --> N
+    UIComponents --> N
     M --> N
     O --> N
-    N --> State Management
+    N --> StateManagement
 ```
 
 ## Technology Stack
